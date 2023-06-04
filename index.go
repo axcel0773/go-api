@@ -3,6 +3,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -76,8 +77,7 @@ func checkErr(err error) {
 	}
 }
 
-//Get all movies
-
+// Get all movies
 // response and request handlers
 func GetMovies(w http.ResponseWriter, r *http.Request) {
 	db := setupDB()
@@ -103,5 +103,67 @@ func GetMovies(w http.ResponseWriter, r *http.Request) {
 
 		//check the erros
 		checkErr(err)
+
+		movies = append(movies, Movie{MovieID: movieID, MovieName: movieName})
 	}
+
+	var response = JsonResponse{Type: "success", Data: movies}
+
+	json.NewEncoder(w).Encode(response)
+}
+
+// Create a movie
+// response and request handlers
+func CreateMovie(w http.ResponseWriter, r *http.Request) {
+	movieId := r.FormValue("movieid")
+	movieName := r.FormValue("moviename")
+
+	var response = JsonResponse{}
+
+	if movieId == "" || movieName == "" {
+		response = JsonResponse{Type: "error", Message: "You are missing movieID or movieName parameter."}
+	} else {
+		db := setupDB()
+
+		printMessage("Inserting movie into DB")
+
+		fmt.Println("Inserting new movie with ID: " + movieId + " and name: " + movieName)
+
+		var lastInsertID int
+
+		err := db.QueryRow("INSERT INTO movies(movieID, movieName) VALUES ($1, $2) returning id;", movieId, movieName).Scan(&lastInsertID)
+
+		//check errors
+		checkErr(err)
+
+		response = JsonResponse{Type: "success", Message: "The movie has been inserted successfully!"}
+	}
+	json.NewEncoder(w).Encode(response)
+}
+
+// Delete a movie
+// response and request handlers
+func DeleteMovie(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	movieId := params["movieid"]
+
+	var response = JsonResponse{}
+
+	if movieId == "" {
+		response = JsonResponse{Type: "error", Message: "You are missing movieID parameter."}
+	} else {
+		db := setupDB()
+
+		printMessage("Deleting movie from Db")
+
+		_, err := db.Exec("DELETE FROM movies WHERE movieID = $1", movieId)
+
+		//check errors
+		checkErr(err)
+
+		response = JsonResponse{Type: "success", Message: "The movie has been deleted successfully!"}
+	}
+
+	json.NewEncoder(w).Encode(response)
 }
