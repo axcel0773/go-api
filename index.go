@@ -167,3 +167,22 @@ func DeleteMovie(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(response)
 }
+
+// Delete all records
+// response and request handlers
+func DeleteMovies(w http.ResponseWriter, r *http.Request) {
+	db := setupDB()
+
+	printMessage("Deleting all movies...")
+
+	_, err := db.Exec("DELETE FROM movies")
+
+	//check errors
+	checkErr(err)
+
+	printMessage("All movies have been deleted successfully!")
+
+	var response = JsonResponse{Type: "success", Message: "All movies have been deleted succesfully!"}
+
+	json.NewEncoder(w).Encode(response)
+}
